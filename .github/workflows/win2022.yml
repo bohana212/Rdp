@@ -8,56 +8,34 @@ jobs:
     timeout-minutes: 9999
 
     steps:
-    - name: Download Ngrok (using curl, safest)
+    - name: Download tools
       run: |
-        curl.exe -L "https://bin.equinox.io/c/bNyj1mQaw/ngrok-v3-stable-windows-amd64.zip" -o ngrok.zip
+        Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
+        Invoke-WebRequest https://raw.githubusercontent.com/techies2k/rdp-wallpapers/main/start-2022.bat -OutFile start.bat
+        Invoke-WebRequest https://raw.githubusercontent.com/techies2k/rdp-wallpapers/main/wallpaper.png -OutFile wallpaper.png
+        Invoke-WebRequest https://raw.githubusercontent.com/techies2k/rdp-wallpapers/main/wallpaper.bat -OutFile wallpaper.bat
+        Invoke-WebRequest https://raw.githubusercontent.com/techies2k/rdp-wallpapers/main/loop.bat -OutFile loop.bat
 
-    - name: Create Required Files
-      run: |
-        # start.bat
-        @'
-        @echo off
-        echo ======================================
-        echo       WINDOWS RDP IS READY NOW
-        echo ======================================
-        echo Check Ngrok log for IP address.
-        timeout /t 99999
-        '@ | Out-File -Encoding ASCII start.bat
+    - name: Extract Ngrok
+      run: Expand-Archive ngrok.zip -DestinationPath ngrok
 
-        # loop.bat
-        @'
-        :loop
-        timeout /t 60 >nul
-        goto loop
-        '@ | Out-File -Encoding ASCII loop.bat
-
-        # wallpaper.bat
-        @'
-        @echo off
-        reg add "HKCU\Control Panel\Desktop" /v Wallpaper /t REG_SZ /d "C:\Windows\Web\Wallpaper\Windows\img0.jpg" /f
-        RUNDLL32.EXE user32.dll,UpdatePerUserSystemParameters
-        '@ | Out-File -Encoding ASCII wallpaper.bat
-
-    - name: Extract Ngrok (using tar instead of Expand-Archive)
-      run: |
-        mkdir ngrok
-        tar -xf ngrok.zip -C ngrok
-
-    - name: Connect to Ngrok
-      run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
+    - name: Add Ngrok Token
+      run: .\ngrok\ngrok.exe config add-authtoken $Env:NGROK_AUTH_TOKEN
       env:
         NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
 
-    - name: Enable RDP Access
+    - name: Enable RDP
       run: |
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
         Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
+        copy wallpaper.png C:\Users\Public\Desktop\
+        copy wallpaper.bat C:\Users\Public\Desktop\
 
-    - name: Open Ngrok Tunnel
-      run: Start-Process powershell -ArgumentList '-Noexit -Command ".\ngrok\ngrok.exe tcp --region ap 3389"'
+    - name: Run Ngrok Tunnel
+      run: Start-Process powershell -ArgumentList '-NoExit -Command ".\ngrok\ngrok.exe tcp --region ap 3389"'
 
-    - name: Start RDP Session
+    - name: Show Connection Info
       run: cmd /c start.bat
 
     - name: Keep Alive
