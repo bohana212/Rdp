@@ -1,33 +1,17 @@
-name: Windows 2022
+name: Windows 2022 RDP (Cloudflared)
 
 on: workflow_dispatch
 
 jobs:
   build:
     runs-on: windows-2022
-    timeout-minutes: 600
+    timeout-minutes: 9999
 
     steps:
-    - name: Download Ngrok Stable
-      run: |
-        Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
 
-    - name: Extract Ngrok
-      run: Expand-Archive ngrok.zip -DestinationPath ngrok
-
-    - name: Create start.bat
+    - name: Download Cloudflared
       run: |
-        Add-Content start.bat "@echo off"
-        Add-Content start.bat "echo ================================"
-        Add-Content start.bat "echo       RDP INFORMATION"
-        Add-Content start.bat "echo ================================"
-        Add-Content start.bat "cd ngrok"
-        Add-Content start.bat "ngrok.exe tcp --region ap 3389"
-        Add-Content start.bat "pause"
-
-    - name: Create keepalive.ps1
-      run: |
-        Add-Content keepalive.ps1 "while ($true) { Start-Sleep -Seconds 300 }"
+        Invoke-WebRequest https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe -OutFile cloudflared.exe
 
     - name: Enable RDP
       run: |
@@ -35,13 +19,30 @@ jobs:
         Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
 
-    - name: Setup Ngrok Authtoken
-      run: .\ngrok\ngrok.exe config add-authtoken $Env:NGROK_AUTH_TOKEN
-      env:
-        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+    - name: Show Windows Password
+      run: |
+        $password = (net user runneradmin) -match 'Password.*'
+        echo "===== LOGIN INFO ====="
+        echo "User: runneradmin"
+        echo "$password"
 
-    - name: Start Ngrok + Show Info
-      run: cmd /c start.bat
+    - name: Start Cloudflared Tunnel (TCP RDP 3389)
+      run: |
+        Start-Process powershell -ArgumentList '-NoExit -Command "./cloudflared.exe tunnel --url tcp://localhost:3389"'
+
+    - name: Wait for Tunnel
+      run: timeout /t 10
+
+    - name: Get Tunnel URL
+      run: |
+        $log = Get-Content "$env:USERPROFILE\.cloudflared\logs\cloudflared.log" -ErrorAction SilentlyContinue
+        $url = ($log | Select-String -Pattern "trycloudflare.com").ToString()
+        echo "============================="
+        echo "      RDP VIA CLOUDFLARED"
+        echo "============================="
+        echo $url
 
     - name: Keep Alive
-      run: powershell.exe -ExecutionPolicy Bypass -File keepalive.ps1
+      run: |
+        echo "Runner is active. Do NOT close this page."
+        ping -t 127.0.0.1 >nul
