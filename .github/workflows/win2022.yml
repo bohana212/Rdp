@@ -17,19 +17,17 @@ jobs:
         # start.bat
         @'
         @echo off
-        echo ================================
-        echo       YOUR RDP IS READY
-        echo ================================
-        ipconfig
-        echo Ngrok Tunnel Active...
-        echo Check GitHub Actions LOG for IP
+        echo ======================================
+        echo        YOUR WINDOWS RDP IS READY
+        echo ======================================
+        echo Copy Ngrok IP from GitHub Actions log
         timeout /t 99999
         '@ | Out-File -Encoding ASCII start.bat
 
         # loop.bat
         @'
         :loop
-        timeout /t 60
+        timeout /t 60 >nul
         goto loop
         '@ | Out-File -Encoding ASCII loop.bat
 
@@ -40,8 +38,8 @@ jobs:
         RUNDLL32.EXE user32.dll,UpdatePerUserSystemParameters
         '@ | Out-File -Encoding ASCII wallpaper.bat
 
-        # wallpaper.png (dummy blue wallpaper)
-        Invoke-WebRequest https://raw.githubusercontent.com/techies2k/wallpapers/main/blue.png -OutFile wallpaper.png
+        # wallpaper.png (new working link)
+        Invoke-WebRequest https://raw.githubusercontent.com/2hha/winrdp-wallpaper/main/wallpaper.png -OutFile wallpaper.png
 
     - name: Extract Ngrok File
       run: Expand-Archive ngrok.zip -DestinationPath ngrok
