@@ -34,12 +34,9 @@ jobs:
         # wallpaper.bat
         @'
         @echo off
-        reg add "HKCU\Control Panel\Desktop" /v Wallpaper /t REG_SZ /d "%cd%\wallpaper.png" /f
+        reg add "HKCU\Control Panel\Desktop" /v Wallpaper /t REG_SZ /d "C:\Windows\Web\Wallpaper\Windows\img0.jpg" /f
         RUNDLL32.EXE user32.dll,UpdatePerUserSystemParameters
         '@ | Out-File -Encoding ASCII wallpaper.bat
-
-        # wallpaper.png (new working link)
-        Invoke-WebRequest https://raw.githubusercontent.com/2hha/winrdp-wallpaper/main/wallpaper.png -OutFile wallpaper.png
 
     - name: Extract Ngrok File
       run: Expand-Archive ngrok.zip -DestinationPath ngrok
@@ -54,7 +51,7 @@ jobs:
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -Value 0
         Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
-        copy wallpaper.png C:\Users\Public\Desktop\wallpaper.png
+        copy "C:\Windows\Web\Wallpaper\Windows\img0.jpg" C:\Users\Public\Desktop\wallpaper.jpg
         copy wallpaper.bat C:\Users\Public\Desktop\wallpaper.bat
 
     - name: Open Ngrok Tunnel
