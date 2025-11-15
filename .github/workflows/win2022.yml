@@ -14,20 +14,22 @@ jobs:
         Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
 
+    - name: Create Cloudflared Log Directory
+      run: mkdir C:\cloudflared\
+
     - name: Download Cloudflared
       run: |
         Invoke-WebRequest https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe -OutFile cloudflared.exe
 
     - name: Start Cloudflare Tunnel (RDP)
       run: |
-        Start-Process powershell -ArgumentList '-NoExit -Command "./cloudflared.exe tunnel --url tcp://localhost:3389"'
+        Start-Process powershell -ArgumentList '-NoExit -Command "./cloudflared.exe tunnel --url tcp://localhost:3389 --logfile C:\cloudflared\rdp.log --loglevel info"'
 
-    - name: Show Tunnel URL
+    - name: Show Tunnel URL (Read Log)
       run: |
-        Start-Sleep -Seconds 8
-        Get-Content "$env:USERPROFILE\.cloudflared\*.log"
+        Start-Sleep -Seconds 10
+        Get-Content C:\cloudflared\rdp.log
 
     - name: Keep Alive
       run: |
-        echo "Keeping runner alive..."
         powershell -command "Start-Sleep -Seconds 9999999"
