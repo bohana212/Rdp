@@ -5,7 +5,7 @@ on: workflow_dispatch
 jobs:
   build:
     runs-on: windows-2022
-    timeout-minutes: 9999
+    timeout-minutes: 600
 
     steps:
     - name: Download Ngrok Stable
@@ -21,19 +21,13 @@ jobs:
         Add-Content start.bat "echo ================================"
         Add-Content start.bat "echo       RDP INFORMATION"
         Add-Content start.bat "echo ================================"
-        Add-Content start.bat "ngrok.exe"
+        Add-Content start.bat "cd ngrok"
+        Add-Content start.bat "ngrok.exe tcp --region ap 3389"
         Add-Content start.bat "pause"
 
-    - name: Create loop.bat (Keep alive)
+    - name: Create keepalive.ps1
       run: |
-        Add-Content loop.bat ":loop"
-        Add-Content loop.bat "timeout /t 99999"
-        Add-Content loop.bat "goto loop"
-
-    - name: Create wallpaper.bat (Optional)
-      run: |
-        Add-Content wallpaper.bat "@echo off"
-        Add-Content wallpaper.bat "echo Wallpaper applied!"
+        Add-Content keepalive.ps1 "while ($true) { Start-Sleep -Seconds 300 }"
 
     - name: Enable RDP
       run: |
@@ -46,11 +40,8 @@ jobs:
       env:
         NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
 
-    - name: Start Ngrok Tunnel
-      run: Start-Process powershell -ArgumentList '-NoExit -Command ".\ngrok\ngrok.exe tcp --region ap 3389"'
-
-    - name: Show RDP Info
+    - name: Start Ngrok + Show Info
       run: cmd /c start.bat
 
     - name: Keep Alive
-      run: cmd /c loop.bat
+      run: powershell.exe -ExecutionPolicy Bypass -File keepalive.ps1
