@@ -1,4 +1,4 @@
-name: Windows 2022 RDP (Cloudflared)
+name: Windows 2022 Cloudflared RDP
 
 on: workflow_dispatch
 
@@ -8,41 +8,26 @@ jobs:
     timeout-minutes: 9999
 
     steps:
-
-    - name: Download Cloudflared
-      run: |
-        Invoke-WebRequest https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe -OutFile cloudflared.exe
-
     - name: Enable RDP
       run: |
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
         Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
 
-    - name: Show Windows Password
+    - name: Download Cloudflared
       run: |
-        $password = (net user runneradmin) -match 'Password.*'
-        echo "===== LOGIN INFO ====="
-        echo "User: runneradmin"
-        echo "$password"
+        Invoke-WebRequest https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe -OutFile cloudflared.exe
 
-    - name: Start Cloudflared Tunnel (TCP RDP 3389)
+    - name: Start Cloudflare Tunnel (RDP)
       run: |
         Start-Process powershell -ArgumentList '-NoExit -Command "./cloudflared.exe tunnel --url tcp://localhost:3389"'
 
-    - name: Wait for Tunnel
-      run: timeout /t 10
-
-    - name: Get Tunnel URL
+    - name: Show Tunnel URL
       run: |
-        $log = Get-Content "$env:USERPROFILE\.cloudflared\logs\cloudflared.log" -ErrorAction SilentlyContinue
-        $url = ($log | Select-String -Pattern "trycloudflare.com").ToString()
-        echo "============================="
-        echo "      RDP VIA CLOUDFLARED"
-        echo "============================="
-        echo $url
+        Start-Sleep -Seconds 8
+        Get-Content "$env:USERPROFILE\.cloudflared\*.log"
 
     - name: Keep Alive
       run: |
-        echo "Runner is active. Do NOT close this page."
-        ping -t 127.0.0.1 >nul
+        echo "Keeping runner alive..."
+        powershell -command "Start-Sleep -Seconds 9999999"
