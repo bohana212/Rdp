@@ -23,13 +23,13 @@ jobs:
 
     - name: Start Cloudflare Tunnel (RDP)
       run: |
-        Start-Process powershell -ArgumentList '-NoExit -Command "./cloudflared.exe tunnel --url tcp://localhost:3389 --logfile C:\cloudflared\rdp.log --loglevel info"'
+        ./cloudflared.exe tunnel --url tcp://localhost:3389 --logfile C:\cloudflared\rdp.log --loglevel info &
 
-    - name: Show Tunnel URL (Read Log)
+    - name: Show Tunnel URL
       run: |
-        Start-Sleep -Seconds 10
+        Start-Sleep -Seconds 15
         Get-Content C:\cloudflared\rdp.log
 
     - name: Keep Alive
       run: |
-        powershell -command "Start-Sleep -Seconds 9999999"
+        while ($true) { Start-Sleep -Seconds 3600 }
